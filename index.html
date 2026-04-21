@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growing-up-everyday | 每一天，都在成长</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Noto Serif SC', serif;
+            overflow-x: hidden;
+            background: #1a0f0a;
+        }
+        
+        /* 粒子画布 */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        /* 全屏区块 */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            padding: 40px 20px;
+            transition: opacity 0.8s ease;
+        }
+        
+        /* 渐变背景层 */
+        .bg-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: opacity 1.5s ease;
+        }
+        
+        .bg-1 {
+            background: linear-gradient(135deg, #2d1810 0%, #4a2c1a 30%, #6b3d26 60%, #8b5a3c 100%);
+        }
+        
+        .bg-2 {
+            background: linear-gradient(135deg, #3d2015 0%, #5a3a28 30%, #7b4d35 60%, #9b6a4c 100%);
+        }
+        
+        .bg-3 {
+            background: linear-gradient(135deg, #4a2818 0%, #6b4230 30%, #8b5a40 60%, #ab7a5c 100%);
+        }
+        
+        .bg-4 {
+            background: linear-gradient(135deg, #5a3820 0%, #7b5238 30%, #9b6a48 60%, #bb8a68 100%);
+        }
+        
+        .bg-5 {
+            background: linear-gradient(135deg, #6b4830 0%, #8b6248 30%, #ab7a58 60%, #cb9a78 100%);
+        }
+        
+        .bg-6 {
+            background: linear-gradient(135deg, #7b5838 0%, #9b7258 30%, #bb8a68 60%, #dbaa88 100%);
+        }
+        
+        .bg-7 {
+            background: linear-gradient(135deg, #8b6848 0%, #ab8268 30%, #cb9a78 60%, #ebc098 100%);
+        }
+        
+        /* 文字样式 */
+        .poem-line {
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            color: #fff8f0;
+            text-align: center;
+            line-height: 2;
+            letter-spacing: 0.15em;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            max-width: 90%;
+        }
+        
+        .poem-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .poem-line.subtle {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            color: rgba(255, 248, 240, 0.7);
+            margin-top: 20px;
+        }
+        
+        /* 标题样式 */
+        .main-title {
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #fff8f0;
+            text-align: center;
+            letter-spacing: 0.3em;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-shadow: 0 4px 30px rgba(0,0,0,0.4);
+        }
+        
+        .main-title.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            color: rgba(255, 248, 240, 0.6);
+            letter-spacing: 0.5em;
+            margin-bottom: 60px;
+            opacity: 0;
+            transition: all 1s ease 0.3s;
+        }
+        
+        .subtitle.visible {
+            opacity: 1;
+        }
+        
+        /* 装饰线 */
+        .divider {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,248,240,0.5), transparent);
+            margin: 40px auto;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        .divider.visible {
+            opacity: 1;
+        }
+        
+        /* 滚动提示 */
+        .scroll-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 248, 240, 0.4);
+            font-size: 0.9rem;
+            letter-spacing: 0.2em;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .scroll-hint.visible {
+            opacity: 1;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+        
+        /* 结束按钮 */
+        .end-button {
+            margin-top: 60px;
+            padding: 15px 50px;
+            background: transparent;
+            border: 1px solid rgba(255, 248, 240, 0.4);
+            color: rgba(255, 248, 240, 0.8);
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1rem;
+            letter-spacing: 0.3em;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+        
+        .end-button.visible {
+            opacity: 1;
+        }
+        
+        .end-button:hover {
+            background: rgba(255, 248, 240, 0.1);
+            border-color: rgba(255, 248, 240, 0.8);
+            color: #fff8f0;
+        }
+        
+        /* 进度指示器 */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #d4a574, #e8c9a0);
+            z-index: 100;
+            transition: width 0.3s ease;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .poem-line {
+                letter-spacing: 0.1em;
+            }
+            .main-title {
+                letter-spacing: 0.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 进度条 -->
+    <div class="progress-bar" id="progressBar"></div>
+    
+    <!-- 粒子画布 -->
+    <canvas id="particle-canvas"></canvas>
+    
+    <!-- 第一屏：标题 -->
+    <section class="section" id="section1">
+        <div class="bg-gradient bg-1"></div>
+        <h1 class="main-title">Growing-up-everyday</h1>
+        <p class="subtitle">每一天，都在成长</p>
+        <div class="divider"></div>
+        <p class="poem-line">你醒来的每一个清晨</p>
+        <p class="poem-line">都是生命赠予的礼物</p>
+        <p class="poem-line subtle">向下滚动，开始你的旅程</p>
+        <div class="scroll-hint">▼ 向下滚动</div>
+    </section>
+    
+    <!-- 第二屏：关于成长 -->
+    <section class="section" id="section2">
+        <div class="bg-gradient bg-2"></div>
+        <p class="poem-line">成长，不是一场赛跑</p>
+        <p class="poem-line">而是无数个平凡日子的累积</p>
+        <div class="divider"></div>
+        <p class="poem-line">你走过的路</p>
+        <p class="poem-line">都是星光落下的痕迹</p>
+        <div class="scroll-hint">▼</div>
+    </section>
+    
+    <!-- 第三屏：关于当下 -->
+    <section class="section" id="section3">
+        <div class="bg-gradient bg-3"></div>
+        <p class="poem-line">不必急于抵达</p>
+        <p class="poem-line">不必焦虑于远方</p>
+        <div class="divider"></div>
+        <p class="poem-line">此刻的你</p>
+        <p class="poem-line">已经足够好</p>
+        <div class="scroll-hint">▼</div>
+    </section>
+    
+    <!-- 第四屏：关于积累 -->
+    <section class="section" id="section4">
+        <div class="bg-gradient bg-4"></div>
+        <p class="poem-line">一滴水</p>
+        <p class="poem-line">也能穿透岩石</p>
+        <div class="divider"></div>
+        <p class="poem-line">那些看似微不足道的坚持</p>
+        <p class="poem-line">终将汇聚成改变的力量</p>
+        <div class="scroll-hint">▼</div>
+    </section>
+    
+    <!-- 第五屏：关于过程 -->
+    <section class="section" id="section5">
+        <div class="bg-gradient bg-5"></div>
+        <p class="poem-line">重要的不是终点</p>
+        <p class="poem-line">而是这一路的风景</p>
+        <div class="divider"></div>
+        <p class="poem-line">每一次跌倒后的站起</p>
+        <p class="poem-line">每一次迷茫后的清醒</p>
+        <p class="poem-line">都是成长的印记</p>
+        <div class="scroll-hint">▼</div>
+    </section>
+    
+    <!-- 第六屏：关于自己 -->
+    <section class="section" id="section6">
+        <div class="bg-gradient bg-6"></div>
+        <p class="poem-line">你不必成为别人</p>
+        <p class="poem-line">你只需成为更好的自己</p>
+        <div class="divider"></div>
+        <p class="poem-line">慢一点，没关系</p>
+        <p class="poem-line">只要还在前行</p>
+        <p class="poem-line">就是最好的姿态</p>
+        <div class="scroll-hint">▼</div>
+    </section>
+    
+    <!-- 第七屏：结尾 -->
+    <section class="section" id="section7">
+        <div class="bg-gradient bg-7"></div>
+        <p class="poem-line">愿你在每一个平凡的日子里</p>
+        <p class="poem-line">都能发现光</p>
+        <div class="divider"></div>
+        <p class="poem-line">Growing up</p>
+        <p class="poem-line">everyday</p>
+        <button class="end-button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            重新开始
+        </button>
+    </section>
+    
+    <script>
+        // 粒子系统
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let particles = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 创建粒子
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.fadeSpeed = Math.random() * 0.005 + 0.002;
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // 鼠标交互
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 100) {
+                    const force = (100 - distance) / 100;
+                    this.x -= dx * force * 0.02;
+                    this.y -= dy * force * 0.02;
+                }
+                
+                // 边界检查
+                if (this.x < 0 || this.x > canvas.width || 
+                    this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+                
+                // 闪烁效果
+                this.opacity += this.fadeSpeed;
+                if (this.opacity > 0.7 || this.opacity < 0.2) {
+                    this.fadeSpeed = -this.fadeSpeed;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 220, 180, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+        
+        // 初始化粒子
+        for (let i = 0; i < 60; i++) {
+            particles.push(new Particle());
+        }
+        
+        // 动画循环
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            // 绘制连线
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(255, 220, 180, ${0.1 * (1 - distance / 100)})`;
+                        ctx.stroke();
+                    }
+                });
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // 鼠标跟踪
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        // 滚动动画
+        const observerOptions = {
+            threshold: 0.3,
+            rootMargin: '0px 0px -10% 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const elements = entry.target.querySelectorAll('.poem-line, .main-title, .subtitle, .divider, .scroll-hint, .end-button');
+                    elements.forEach((el, index) => {
+                        setTimeout(() => {
+                            el.classList.add('visible');
+                        }, index * 200);
+                    });
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+        
+        // 进度条
+        const progressBar = document.getElementById('progressBar');
+        
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            progressBar.style.width = scrollPercent + '%';
+        });
+        
+        // 点击滚动提示
+        document.querySelectorAll('.scroll-hint').forEach(hint => {
+            hint.addEventListener('click', () => {
+                const currentSection = hint.closest('.section');
+                const nextSection = currentSection.nextElementSibling;
+                if (nextSection) {
+                    nextSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        // 初始显示第一屏
+        setTimeout(() => {
+            const firstSection = document.getElementById('section1');
+            const elements = firstSection.querySelectorAll('.poem-line, .main-title, .subtitle, .divider, .scroll-hint');
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.classList.add('visible');
+                }, index * 300);
+            });
+        }, 500);
+    </script>
+</body>
+</html>
