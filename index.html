@@ -217,14 +217,142 @@
             transition: width 0.3s ease;
         }
         
+        /* ========== 音乐播放器样式 ========== */
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(30, 20, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 15px 20px;
+            border: 1px solid rgba(255, 220, 180, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .music-player.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        
+        .music-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .music-icon {
+            font-size: 1.5rem;
+            animation: none;
+        }
+        
+        .music-icon.playing {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .music-title {
+            font-size: 0.85rem;
+            color: rgba(255, 248, 240, 0.8);
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .music-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .music-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 220, 180, 0.3);
+            background: transparent;
+            color: rgba(255, 248, 240, 0.8);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .music-btn:hover {
+            background: rgba(255, 220, 180, 0.15);
+            border-color: rgba(255, 220, 180, 0.6);
+            color: #fff8f0;
+        }
+        
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 220, 180, 0.2);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e8c9a0;
+            cursor: pointer;
+        }
+        
+        .music-upload {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .music-upload-label {
+            font-size: 0.75rem;
+            color: rgba(255, 248, 240, 0.5);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .music-upload-label:hover {
+            color: rgba(255, 248, 240, 0.8);
+        }
+        
+        #musicFileInput {
+            display: none;
+        }
+        
         /* 响应式 */
         @media (max-width: 768px) {
-            .poem-line {
-                letter-spacing: 0.1em;
+            .poem-line { letter-spacing: 0.1em; }
+            .main-title { letter-spacing: 0.2em; }
+            .music-player {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                padding: 12px 15px;
             }
-            .main-title {
-                letter-spacing: 0.2em;
-            }
+            .music-title { max-width: 120px; }
+            .volume-slider { width: 60px; }
         }
     </style>
 </head>
@@ -234,6 +362,29 @@
     
     <!-- 粒子画布 -->
     <canvas id="particle-canvas"></canvas>
+    
+    <!-- 音乐播放器 -->
+    <div class="music-player" id="musicPlayer">
+        <div class="music-info">
+            <span class="music-icon" id="musicIcon">🎵</span>
+            <span class="music-title" id="musicTitle">Snow Dreams</span>
+        </div>
+        <div class="music-controls">
+            <button class="music-btn" id="playBtn" title="播放/暂停">▶</button>
+            <button class="music-btn" id="prevBtn" title="上一首">⏮</button>
+            <button class="music-btn" id="nextBtn" title="下一首">⏭</button>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" title="音量">
+        </div>
+        <div class="music-upload">
+            <label for="musicFileInput" class="music-upload-label">📁 自选音乐</label>
+            <input type="file" id="musicFileInput" accept="audio/*">
+        </div>
+    </div>
+    
+    <!-- 隐藏的音频元素 -->
+    <audio id="audioPlayer" loop preload="auto">
+        <source src="Snow%20Dreams.flac" type="audio/flac">
+    </audio>
     
     <!-- 第一屏：标题 -->
     <section class="section" id="section1">
@@ -247,7 +398,7 @@
         <div class="scroll-hint">▼ 向下滚动</div>
     </section>
     
-    <!-- 第二屏：关于成长 -->
+    <!-- 第二屏 -->
     <section class="section" id="section2">
         <div class="bg-gradient bg-2"></div>
         <p class="poem-line">成长，不是一场赛跑</p>
@@ -258,7 +409,7 @@
         <div class="scroll-hint">▼</div>
     </section>
     
-    <!-- 第三屏：关于当下 -->
+    <!-- 第三屏 -->
     <section class="section" id="section3">
         <div class="bg-gradient bg-3"></div>
         <p class="poem-line">不必急于抵达</p>
@@ -269,7 +420,7 @@
         <div class="scroll-hint">▼</div>
     </section>
     
-    <!-- 第四屏：关于积累 -->
+    <!-- 第四屏 -->
     <section class="section" id="section4">
         <div class="bg-gradient bg-4"></div>
         <p class="poem-line">一滴水</p>
@@ -280,7 +431,7 @@
         <div class="scroll-hint">▼</div>
     </section>
     
-    <!-- 第五屏：关于过程 -->
+    <!-- 第五屏 -->
     <section class="section" id="section5">
         <div class="bg-gradient bg-5"></div>
         <p class="poem-line">重要的不是终点</p>
@@ -292,7 +443,7 @@
         <div class="scroll-hint">▼</div>
     </section>
     
-    <!-- 第六屏：关于自己 -->
+    <!-- 第六屏 -->
     <section class="section" id="section6">
         <div class="bg-gradient bg-6"></div>
         <p class="poem-line">你不必成为别人</p>
@@ -304,7 +455,7 @@
         <div class="scroll-hint">▼</div>
     </section>
     
-    <!-- 第七屏：结尾 -->
+    <!-- 第七屏 -->
     <section class="section" id="section7">
         <div class="bg-gradient bg-7"></div>
         <p class="poem-line">愿你在每一个平凡的日子里</p>
@@ -318,7 +469,7 @@
     </section>
     
     <script>
-        // 粒子系统
+        // ========== 粒子系统 ==========
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         
@@ -334,7 +485,6 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         
-        // 创建粒子
         class Particle {
             constructor() {
                 this.reset();
@@ -354,7 +504,6 @@
                 this.x += this.speedX;
                 this.y += this.speedY;
                 
-                // 鼠标交互
                 const dx = mouseX - this.x;
                 const dy = mouseY - this.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -365,13 +514,11 @@
                     this.y -= dy * force * 0.02;
                 }
                 
-                // 边界检查
                 if (this.x < 0 || this.x > canvas.width || 
                     this.y < 0 || this.y > canvas.height) {
                     this.reset();
                 }
                 
-                // 闪烁效果
                 this.opacity += this.fadeSpeed;
                 if (this.opacity > 0.7 || this.opacity < 0.2) {
                     this.fadeSpeed = -this.fadeSpeed;
@@ -386,12 +533,10 @@
             }
         }
         
-        // 初始化粒子
         for (let i = 0; i < 60; i++) {
             particles.push(new Particle());
         }
         
-        // 动画循环
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -400,7 +545,6 @@
                 particle.draw();
             });
             
-            // 绘制连线
             particles.forEach((p1, i) => {
                 particles.slice(i + 1).forEach(p2 => {
                     const dx = p1.x - p2.x;
@@ -422,13 +566,12 @@
         
         animate();
         
-        // 鼠标跟踪
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
         });
         
-        // 滚动动画
+        // ========== 滚动动画 ==========
         const observerOptions = {
             threshold: 0.3,
             rootMargin: '0px 0px -10% 0px'
@@ -482,6 +625,131 @@
                 }, index * 300);
             });
         }, 500);
+        
+        // ========== 音乐播放器功能 ==========
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const musicTitle = document.getElementById('musicTitle');
+        const musicIcon = document.getElementById('musicIcon');
+        const musicPlayer = document.getElementById('musicPlayer');
+        const musicFileInput = document.getElementById('musicFileInput');
+        
+        let isPlaying = false;
+        let playlist = [];
+        let currentTrackIndex = 0;
+        
+        // 默认音乐
+        const defaultTrack = {
+            name: 'Snow Dreams',
+            url: 'Snow%20Dreams.flac'
+        };
+        
+        // 初始化播放列表
+        function initPlaylist() {
+            playlist = [defaultTrack];
+            currentTrackIndex = 0;
+        }
+        
+        // 播放/暂停
+        function togglePlay() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playBtn.textContent = '▶';
+                musicIcon.classList.remove('playing');
+            } else {
+                audioPlayer.play().catch(e => {
+                    console.log('播放失败:', e);
+                    musicTitle.textContent = '点击自选音乐';
+                });
+                playBtn.textContent = '⏸';
+                musicIcon.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        // 上一首
+        function prevTrack() {
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            currentTrackIndex = Math.max(0, currentTrackIndex);
+            if (playlist[currentTrackIndex]) {
+                audioPlayer.src = playlist[currentTrackIndex].url;
+                musicTitle.textContent = playlist[currentTrackIndex].name;
+                if (isPlaying) audioPlayer.play();
+            }
+        }
+        
+        // 下一首
+        function nextTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            if (playlist[currentTrackIndex]) {
+                audioPlayer.src = playlist[currentTrackIndex].url;
+                musicTitle.textContent = playlist[currentTrackIndex].name;
+                if (isPlaying) audioPlayer.play();
+            }
+        }
+        
+        // 音量控制
+        function changeVolume(value) {
+            audioPlayer.volume = value / 100;
+        }
+        
+        // 自选音乐
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                playlist.push({
+                    name: file.name.replace(/\.[^/.]+$/, ''),
+                    url: url
+                });
+                currentTrackIndex = playlist.length - 1;
+                audioPlayer.src = url;
+                musicTitle.textContent = file.name.replace(/\.[^/.]+$/, '');
+                audioPlayer.play();
+                playBtn.textContent = '⏸';
+                musicIcon.classList.add('playing');
+                isPlaying = true;
+            }
+        }
+        
+        // 显示播放器
+        function showPlayer() {
+            musicPlayer.classList.add('visible');
+        }
+        
+        // 事件监听
+        playBtn.addEventListener('click', togglePlay);
+        prevBtn.addEventListener('click', prevTrack);
+        nextBtn.addEventListener('click', nextTrack);
+        volumeSlider.addEventListener('input', (e) => changeVolume(e.target.value));
+        musicFileInput.addEventListener('change', handleFileSelect);
+        musicPlayer.addEventListener('click', showPlayer);
+        
+        // 音频事件
+        audioPlayer.addEventListener('ended', nextTrack);
+        audioPlayer.addEventListener('play', () => {
+            isPlaying = true;
+            playBtn.textContent = '⏸';
+            musicIcon.classList.add('playing');
+            showPlayer();
+        });
+        audioPlayer.addEventListener('pause', () => {
+            isPlaying = false;
+            playBtn.textContent = '▶';
+            musicIcon.classList.remove('playing');
+        });
+        
+        // 页面加载后显示播放器
+        initPlaylist();
+        audioPlayer.volume = 0.5;
+        volumeSlider.value = 50;
+        
+        setTimeout(() => {
+            showPlayer();
+        }, 1500);
     </script>
 </body>
 </html>
