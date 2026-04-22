@@ -636,119 +636,141 @@
         const musicIcon = document.getElementById('musicIcon');
         const musicPlayer = document.getElementById('musicPlayer');
         const musicFileInput = document.getElementById('musicFileInput');
-        
-        let isPlaying = false;
+
         let playlist = [];
         let currentTrackIndex = 0;
-        
+
         // 默认音乐
         const defaultTrack = {
             name: 'Snow Dreams',
             url: 'Snow_Dreams.mp3'
         };
-        
-        // 初始化播放列表
-        function initPlaylist() {
+
+        // 初始化播放列表并加载默认音乐
+        function initPlayer() {
             playlist = [defaultTrack];
             currentTrackIndex = 0;
+            audioPlayer.src = defaultTrack.url;   // 显式设置 src
+            audioPlayer.volume = 0.5;
+            volumeSlider.value = 50;
+            updateUI(false);
         }
-        
-        // 播放/暂停
-        function togglePlay() {
-            if (isPlaying) {
-                audioPlayer.pause();
-                playBtn.textContent = '▶';
-                musicIcon.classList.remove('playing');
-            } else {
-                audioPlayer.play().catch(e => {
-                    console.log('播放失败:', e);
-                    musicTitle.textContent = '点击自选音乐';
-                });
-                playBtn.textContent = '⏸';
+
+        // 同步 UI 状态
+        function updateUI(playing) {
+            playBtn.textContent = playing ? '⏸' : '▶';
+            if (playing) {
                 musicIcon.classList.add('playing');
+            } else {
+                musicIcon.classList.remove('playing');
             }
-            isPlaying = !isPlaying;
+            musicPlayer.classList.add('visible');
         }
-        
+
+        // 播放/暂停
+        function togglePlay(e) {
+            if (e) e.stopPropagation();  // 阻止事件冒泡
+            if (audioPlayer.paused) {
+                audioPlayer.play().then(() => {
+                    updateUI(true);
+                }).catch(err => {
+                    console.log('播放失败：', err);
+                    musicTitle.textContent = '加载中...';
+                    setTimeout(() => {
+                        musicTitle.textContent = playlist[currentTrackIndex].name;
+                    }, 2000);
+                });
+            } else {
+                audioPlayer.pause();
+                updateUI(false);
+            }
+        }
+
         // 上一首
-        function prevTrack() {
+        function prevTrack(e) {
+            if (e) e.stopPropagation();
             currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-            currentTrackIndex = Math.max(0, currentTrackIndex);
-            if (playlist[currentTrackIndex]) {
-                audioPlayer.src = playlist[currentTrackIndex].url;
-                musicTitle.textContent = playlist[currentTrackIndex].name;
-                if (isPlaying) audioPlayer.play();
-            }
+            loadTrack(currentTrackIndex);
         }
-        
+
         // 下一首
-        function nextTrack() {
+        function nextTrack(e) {
+            if (e) e.stopPropagation();
             currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            if (playlist[currentTrackIndex]) {
-                audioPlayer.src = playlist[currentTrackIndex].url;
-                musicTitle.textContent = playlist[currentTrackIndex].name;
-                if (isPlaying) audioPlayer.play();
-            }
+            loadTrack(currentTrackIndex);
         }
-        
+
+        // 加载并播放指定曲目
+        function loadTrack(index) {
+            if (!playlist[index]) return;
+            const track = playlist[index];
+            audioPlayer.src = track.url;
+            musicTitle.textContent = track.name;
+            audioPlayer.play().then(() => {
+                updateUI(true);
+            }).catch(err => {
+                console.log('播放失败：', err);
+                updateUI(false);
+            });
+        }
+
         // 音量控制
         function changeVolume(value) {
             audioPlayer.volume = value / 100;
         }
-        
+
         // 自选音乐
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                playlist.push({
-                    name: file.name.replace(/\.[^/.]+$/, ''),
-                    url: url
-                });
-                currentTrackIndex = playlist.length - 1;
-                audioPlayer.src = url;
-                musicTitle.textContent = file.name.replace(/\.[^/.]+$/, '');
-                audioPlayer.play();
-                playBtn.textContent = '⏸';
-                musicIcon.classList.add('playing');
-                isPlaying = true;
-            }
+        function handleFileSelect(e) {
+            if (e) e.stopPropagation();
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            playlist.push({
+                name: file.name.replace(/\.[^/.]+$/, ''),
+                url: url
+            });
+            currentTrackIndex = playlist.length - 1;
+            audioPlayer.src = url;
+            musicTitle.textContent = file.name.replace(/\.[^/.]+$/, '');
+            audioPlayer.play().then(() => {
+                updateUI(true);
+            }).catch(err => {
+                console.log('播放失败：', err);
+            });
         }
-        
-        // 显示播放器
-        function showPlayer() {
-            musicPlayer.classList.add('visible');
-        }
-        
-        // 事件监听
+
+        // 事件监听（全部用 stopPropagation 防止冒泡）
         playBtn.addEventListener('click', togglePlay);
         prevBtn.addEventListener('click', prevTrack);
         nextBtn.addEventListener('click', nextTrack);
-        volumeSlider.addEventListener('input', (e) => changeVolume(e.target.value));
+        volumeSlider.addEventListener('input', (e) => {
+            e.stopPropagation();
+            changeVolume(e.target.value);
+        });
+        volumeSlider.addEventListener('mousedown', (e) => e.stopPropagation());
         musicFileInput.addEventListener('change', handleFileSelect);
-        musicPlayer.addEventListener('click', showPlayer);
-        
+
+        // 阻止 musicPlayer 的点击事件冒泡（避免干扰按钮）
+        musicPlayer.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
         // 音频事件
-        audioPlayer.addEventListener('ended', nextTrack);
+        audioPlayer.addEventListener('ended', () => {
+            nextTrack();
+        });
         audioPlayer.addEventListener('play', () => {
-            isPlaying = true;
-            playBtn.textContent = '⏸';
-            musicIcon.classList.add('playing');
-            showPlayer();
+            updateUI(true);
         });
         audioPlayer.addEventListener('pause', () => {
-            isPlaying = false;
-            playBtn.textContent = '▶';
-            musicIcon.classList.remove('playing');
+            updateUI(false);
         });
-        
-        // 页面加载后显示播放器
-        initPlaylist();
-        audioPlayer.volume = 0.5;
-        volumeSlider.value = 50;
-        
+
+        // 页面加载后初始化
+        initPlayer();
+
         setTimeout(() => {
-            showPlayer();
+            musicPlayer.classList.add('visible');
         }, 1500);
     </script>
 </body>
